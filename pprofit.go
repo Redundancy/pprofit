@@ -1,4 +1,4 @@
 /*
-Adding a go file so that you can go get the package.
+Package pprofit is a collection of libraries and utilities for working with pprof profiles using Go code exclusively
 */
 package pprofit
