@@ -63,6 +63,7 @@ func WaitForTeminationSignal() {
 	<-c
 }
 
+// Just write a profile to disk
 func WriteProfileToDisk() {
 	if f := CreateProfile(); f == nil {
 		return
@@ -74,6 +75,7 @@ func WriteProfileToDisk() {
 	pprof.StopCPUProfile()
 }
 
+// Set up a pprof http server, then run in a loop until asked to quit
 func HttpProfileServer() {
 	go func() {
 		log.Println("Starting pprof http server on 6060")

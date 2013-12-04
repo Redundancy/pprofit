@@ -1,20 +1,24 @@
-ppofit
+pprofit
 ------
+
+Libraries and utilities for pprof, written in Go.
 
 Overview
 --------
 
-The Golang profiling tools are a pain to get set up in windows, and they're quite dated compared
+The Golang profiling tools are a pain to get set up in Windows, and they're quite dated compared
 to the tools available in IDEs like Visual Studio nowadays.
 
-The over-ambitious goal of this is to start building a cross platform tool for the profiling of
-Go programs (and perhaps anything using the pprof format eventually) using Go and web browsers as the
-IDE. Ideally though, the core functionality will be well factored and tested such that a CLI
-or other forms of interaction can be added to it. 
+The over-ambitious goal of this is to start building a cross platform toolkit for the profiling of the performance of
+Go programs using Go itself and web browsers as the IDE. 
+Ideally though, the core functionality will be well factored and tested such that a CLI or other forms of interaction can be added to it. 
 
-My initial thinking is to consider using Dart 1.0 for the webapp, but it might just be easier to
-use javascript.
+Local testing
+-------------
+go build github.com/Redundancy/pprofit/sampleapp github.com/Redundancy/pprofit/integrationtest
+Running integrationtest should execute sampleapp and interrogate it to generate a profile, get other symbol information and then shut it down.
 
+This is currently being developed on Windows, but there shouldn't be anything particularly special about that. I will look into getting a CI loop set up on Travis or some other service. 
 
 Milestones
 ----------

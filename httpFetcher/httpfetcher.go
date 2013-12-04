@@ -1,6 +1,9 @@
 /*
 This package implements an interface to interact with the http server behind net/http/pprof
 We don't need to worry too much about the implementation on the backend, just the interface to it
+
+TODO worry about timeouts on long profiles
+TODO allow the http fetcher to run profiles for different lengths of time
 */
 package httpFetcher
 

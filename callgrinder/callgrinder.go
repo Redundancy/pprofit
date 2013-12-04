@@ -1,5 +1,7 @@
 /*
 Package callgrinder takes lists of samples and constructs a callgraph, with exclusive and inclusive function costs
+
+Currently WIP
 */
 package callgrinder
 
@@ -13,7 +15,9 @@ type CPUProfile struct {
 
 	// functions at the root of callstacks.
 	// these are typically the program entrypoint and goroutine entrypoints
-	RootFunctions []FunctionSummary
+	RootFunctions []*FunctionSummary
+
+	allFunctions map[string]*FunctionSummary
 }
 
 type FunctionSummary struct {
@@ -25,10 +29,30 @@ type FunctionSummary struct {
 	// The number of samples in this function, and functions called by this function
 	InclusiveSamples uint64
 
-	// TODO: figure out what to do with caller / callee (should it have percentages?)
+	// TODO: figure out what to do with caller / callee (should it have percentages depending on who called most?)
 
 	// FunctionSummaries that were called by this one
-	Callees []FunctionSummary
+	Callees []*FunctionSummary
 	// FunctionSummaries that called this one
-	Callers []FunctionSummary
+	Callers []*FunctionSummary
+}
+
+func (p *CPUProfile) AddSample(functionID string, sampleCount uint64) {
+	if p.allFunctions == nil {
+		p.allFunctions = make(map[string]*FunctionSummary)
+	}
+
+	functionInfo, existsAlready := p.allFunctions[functionID]
+
+	if !existsAlready {
+		functionInfo = &FunctionSummary{
+			FunctionIdentifier: functionID,
+		}
+
+		p.RootFunctions = append(p.RootFunctions, functionInfo)
+	}
+
+	p.TotalSamples += sampleCount
+	functionInfo.ExclusiveSamples += sampleCount
+	functionInfo.InclusiveSamples += sampleCount
 }
