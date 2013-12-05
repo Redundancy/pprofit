@@ -18,7 +18,7 @@ Extremely early! Don't expect anything useful yet.
 
 Local testing
 -------------
-go build github.com/Redundancy/pprofit/sampleapp github.com/Redundancy/pprofit/integrationtest
+`go build github.com/Redundancy/pprofit/sampleapp github.com/Redundancy/pprofit/integrationtest`
 Running integrationtest should execute sampleapp and interrogate it to generate a profile, get other symbol information and then shut it down.
 
 This is currently being developed on Windows, but there shouldn't be anything particularly special about that. I will look into getting a CI loop set up on Travis or some other service. 

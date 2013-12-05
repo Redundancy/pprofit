@@ -5,6 +5,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/Redundancy/pprofit/callgrinder"
 	"github.com/Redundancy/pprofit/httpFetcher"
 	"github.com/Redundancy/pprofit/pprofReader"
 	"log"
@@ -50,7 +51,27 @@ func main() {
 		log.Fatalf("Error getting function name symbols for profile: %v", err)
 	}
 
-	PrintSamples(profile.Samples, pointerToNameMap)
+	log.Println("Grinding callstack")
+	crunchedProfile := &callgrinder.CPUProfile{}
+	for _, sample := range profile.Samples {
+		crunchedProfile.AddSample(
+			sample.SampleCount,
+			SampleFunctionsToIdentifiers(sample, pointerToNameMap)...,
+		)
+	}
+
+	//PrintSamples(profile.Samples, pointerToNameMap)
+	crunchedProfile.Print()
+}
+
+func SampleFunctionsToIdentifiers(s pprofReader.Sample, functionMap map[uint64]string) []string {
+	result := make([]string, len(s.CallStack))
+
+	for i, pointer := range s.CallStack {
+		result[i] = functionMap[pointer]
+	}
+
+	return result
 }
 
 func PrintSamples(s pprofReader.ProfileSamples, functionMap map[uint64]string) {

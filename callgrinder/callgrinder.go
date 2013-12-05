@@ -6,6 +6,8 @@ Currently WIP
 package callgrinder
 
 import (
+	"fmt"
+	"strings"
 	"time"
 )
 
@@ -37,22 +39,89 @@ type FunctionSummary struct {
 	Callers []*FunctionSummary
 }
 
-func (p *CPUProfile) AddSample(functionID string, sampleCount uint64) {
+func (p *CPUProfile) AddSample(sampleCount uint64, functionIDs ...string) {
 	if p.allFunctions == nil {
 		p.allFunctions = make(map[string]*FunctionSummary)
 	}
 
-	functionInfo, existsAlready := p.allFunctions[functionID]
-
-	if !existsAlready {
-		functionInfo = &FunctionSummary{
-			FunctionIdentifier: functionID,
-		}
-
-		p.RootFunctions = append(p.RootFunctions, functionInfo)
+	if len(functionIDs) == 0 {
+		return
 	}
 
+	// on recursive functions, don't add them to the inclusive samples more than once
+	inclusivelyCreditedFunctions := make(map[string]bool)
+
+	lastFunctionIndex := len(functionIDs) - 1
+	var lastFunction *FunctionSummary = nil
 	p.TotalSamples += sampleCount
-	functionInfo.ExclusiveSamples += sampleCount
-	functionInfo.InclusiveSamples += sampleCount
+
+	for i, functionID := range functionIDs {
+		functionInfo, existsAlready := p.allFunctions[functionID]
+
+		if !existsAlready {
+			functionInfo = &FunctionSummary{
+				FunctionIdentifier: functionID,
+			}
+
+			p.allFunctions[functionID] = functionInfo
+		}
+
+		// can be both first and last
+		if i == 0 {
+			functionInfo.ExclusiveSamples += sampleCount
+		}
+		if i == lastFunctionIndex && !existsIn(functionInfo, p.RootFunctions) {
+
+			p.RootFunctions = append(p.RootFunctions, functionInfo)
+
+		}
+
+		if lastFunction != nil {
+			if !existsIn(functionInfo, lastFunction.Callers) {
+				lastFunction.Callers = append(lastFunction.Callers, functionInfo)
+			}
+			if !existsIn(lastFunction, functionInfo.Callees) {
+				functionInfo.Callees = append(functionInfo.Callees, lastFunction)
+			}
+		}
+
+		if !inclusivelyCreditedFunctions[functionID] {
+			functionInfo.InclusiveSamples += sampleCount
+			inclusivelyCreditedFunctions[functionID] = true
+		}
+
+		lastFunction = functionInfo
+	}
+}
+
+func existsIn(f *FunctionSummary, l []*FunctionSummary) bool {
+	for _, item := range l {
+		if item == f {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *CPUProfile) Print() {
+	fmt.Printf("Profile with %v samples\n", p.TotalSamples)
+
+	// depth first print
+	for _, root := range p.RootFunctions {
+		p.PrintFunction(0, root)
+	}
+}
+
+func (p *CPUProfile) PrintFunction(depth int, f *FunctionSummary) {
+	fmt.Printf(
+		"%v %v %.2f%% (%.2f%%)\n",
+		strings.Repeat("  ", depth),
+		f.FunctionIdentifier,
+		100.0*float64(f.InclusiveSamples)/float64(p.TotalSamples),
+		100.0*float64(f.ExclusiveSamples)/float64(p.TotalSamples),
+	)
+
+	for _, c := range f.Callees {
+		p.PrintFunction(depth+1, c)
+	}
 }
