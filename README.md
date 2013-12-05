@@ -17,7 +17,7 @@ Current Status
 Extremely early! Don't expect anything useful yet.
 
 This is the current output from the integration test:
-`
+```
 2013/12/05 13:31:12 Starting profile collection (this will take ~30 secs)
 2013/12/05 13:31:42 Done collecting profile
 2013/12/05 13:31:42 Grinding callstack
@@ -32,7 +32,7 @@ Profile with 2996 samples
            main.LongRunningFuncion 4.47% (0.10%)
              math.Sinh 4.37% (0.27%)
                math.Exp 4.11% (4.11%)
-`
+```
 
 Local testing
 -------------
