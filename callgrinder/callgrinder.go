@@ -19,7 +19,8 @@ type CPUProfile struct {
 	// these are typically the program entrypoint and goroutine entrypoints
 	RootFunctions []*FunctionSummary
 
-	allFunctions map[string]*FunctionSummary
+	// flattened functions by identifier
+	AllFunctions map[string]*FunctionSummary
 }
 
 type FunctionSummary struct {
@@ -39,9 +40,11 @@ type FunctionSummary struct {
 	Callers []*FunctionSummary
 }
 
+// Add sample information for a callstack
+// functions are listed from deepest to shallowest by a string indentifier
 func (p *CPUProfile) AddSample(sampleCount uint64, functionIDs ...string) {
-	if p.allFunctions == nil {
-		p.allFunctions = make(map[string]*FunctionSummary)
+	if p.AllFunctions == nil {
+		p.AllFunctions = make(map[string]*FunctionSummary)
 	}
 
 	if len(functionIDs) == 0 {
@@ -56,14 +59,14 @@ func (p *CPUProfile) AddSample(sampleCount uint64, functionIDs ...string) {
 	p.TotalSamples += sampleCount
 
 	for i, functionID := range functionIDs {
-		functionInfo, existsAlready := p.allFunctions[functionID]
+		functionInfo, existsAlready := p.AllFunctions[functionID]
 
 		if !existsAlready {
 			functionInfo = &FunctionSummary{
 				FunctionIdentifier: functionID,
 			}
 
-			p.allFunctions[functionID] = functionInfo
+			p.AllFunctions[functionID] = functionInfo
 		}
 
 		// can be both first and last
@@ -103,16 +106,31 @@ func existsIn(f *FunctionSummary, l []*FunctionSummary) bool {
 	return false
 }
 
+// Print a simple summary of a CPU callgraph
+// output features inclusive samples and exclusive samples in ()
 func (p *CPUProfile) Print() {
 	fmt.Printf("Profile with %v samples\n", p.TotalSamples)
 
 	// depth first print
 	for _, root := range p.RootFunctions {
-		p.PrintFunction(0, root)
+		p.printFunction(
+			0,
+			20,
+			root,
+			make([]*FunctionSummary, 0, 20),
+		)
 	}
 }
 
-func (p *CPUProfile) PrintFunction(depth int, f *FunctionSummary) {
+// Could be optimized a bit by not copying the seenFunctionStack each time
+func (p *CPUProfile) printFunction(
+	depth, limit int,
+	f *FunctionSummary,
+	seenFunctionStack []*FunctionSummary,
+) {
+
+	seenFunctionStack = append(seenFunctionStack, f)
+
 	fmt.Printf(
 		"%v %v %.2f%% (%.2f%%)\n",
 		strings.Repeat("  ", depth),
@@ -121,7 +139,28 @@ func (p *CPUProfile) PrintFunction(depth int, f *FunctionSummary) {
 		100.0*float64(f.ExclusiveSamples)/float64(p.TotalSamples),
 	)
 
+	if depth >= limit {
+		return
+	}
+
+ForEachCallee:
 	for _, c := range f.Callees {
-		p.PrintFunction(depth+1, c)
+		if existsIn(c, seenFunctionStack) {
+			fmt.Printf(
+				"%v %v %.2f%% (%.2f%%) [R]\n",
+				strings.Repeat("  ", depth+1),
+				c.FunctionIdentifier,
+				100.0*float64(c.InclusiveSamples)/float64(p.TotalSamples),
+				100.0*float64(c.ExclusiveSamples)/float64(p.TotalSamples),
+			)
+			continue ForEachCallee
+		}
+
+		p.printFunction(
+			depth+1,
+			limit,
+			c,
+			seenFunctionStack, // NB: copy, so no need to remove items
+		)
 	}
 }

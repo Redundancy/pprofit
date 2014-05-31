@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -58,7 +59,10 @@ func (f *HttpFetcher) getVars() (server string, port uint, duration time.Duratio
 // Fetch a new profile from the http server
 func (f *HttpFetcher) GetProfile() (io.Reader, error) {
 	server, port, _ := f.getVars()
-	response, err := http.Get(fmt.Sprintf("http://%v:%v/debug/pprof/profile", server, port))
+
+	urlStr := fmt.Sprintf("http://%v:%v/debug/pprof/profile", server, port)
+	s := uint(f.ProfileDuration.Seconds())
+	response, err := http.PostForm(urlStr, url.Values{"seconds": []string{fmt.Sprint(s)}})
 
 	if err != nil {
 		return nil, err
